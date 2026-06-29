@@ -81,7 +81,6 @@
       position: relative;
       width: 180px;
       font-size: 10px;
-      height: 100%;
     }
     
      .side-label {
@@ -231,7 +230,10 @@
         const maxDepth = Math.max(...intervals.map(i => i.bottomDepth));
 
         // Adjust this if logs are too tall or too compressed.
-        const scale = 2; // pixels per foot
+        const scale = 2;
+        
+        labelsEl.style.height = `${maxDepth * scale}px`;
+        profileEl.style.height = `${maxDepth * scale}px`;
 
         statusEl.textContent = intervals.length + " lithology interval(s) found.";
 
@@ -242,7 +244,6 @@
           </div>
         `;
 
-const labelsEl = document.getElementById("labels"); // ADD THIS near your other element defs
 labelsEl.innerHTML = "";
 
 profileEl.innerHTML = intervals.map(interval => {
