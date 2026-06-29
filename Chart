@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Well Lithology Profile</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 12px;
+      color: #222;
+      background: #fff;
+    }
+
+    h3 {
+      margin: 0 0 8px 0;
+      font-size: 16px;
+    }
+
+    #status {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 10px;
+    }
+
+    .profile-wrap {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .depth-axis {
+      width: 55px;
+      font-size: 11px;
+      color: #555;
+      text-align: right;
+      padding-right: 5px;
+      border-right: 1px solid #777;
+    }
+
+    .log-column {
+      width: 160px;
+      border: 1px solid #333;
+      background: #f7f7f7;
+    }
+
+    .interval {
+      box-sizing: border-box;
+      border-bottom: 1px solid #444;
+      padding: 2px 4px;
+      font-size: 10px;
+      line-height: 1.1;
+      overflow: hidden;
+      color: #111;
+    }
+
+    .interval strong {
+      font-size: 10px;
+    }
+
+    .legend {
+      margin-top: 12px;
+      font-size: 11px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 3px;
+    }
+
+    .swatch {
+      width: 12px;
+      height: 12px;
+      border: 1px solid #444;
+      display: inline-block;
+    }
+  </style>
+</head>
+
+<body>
+  <h3>Well Lithology Profile</h3>
+  <div id="status">Select a well to view lithology.</div>
+
+  <div class="profile-wrap">
+    <div id="depthAxis" class="depth-axis"></div>
+    <div id="profile" class="log-column"></div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><span class="swatch" style="background:#f4d03f;"></span> Sand</div>
+    <div class="legend-item"><span class="swatch" style="background:#c2b280;"></span> Silt</div>
+    <div class="legend-item"><span class="swatch" style="background:#a67c52;"></span> Clay</div>
+    <div class="legend-item"><span class="swatch" style="background:#9e9e9e;"></span> Gravel</div>
+    <div class="legend-item"><span class="swatch" style="background:#b0c4de;"></span> Till / Diamicton</div>
+    <div class="legend-item"><span class="swatch" style="background:#95a5a6;"></span> Rock / Bedrock</div>
+    <div class="legend-item"><span class="swatch" style="background:#d5d8dc;"></span> Other</div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const wellid = params.get("wellid");
+
+    const statusEl = document.getElementById("status");
+    const profileEl = document.getElementById("profile");
+    const axisEl = document.getElementById("depthAxis");
+
+    // EGLE Well Lithology table fields
+    const WELL_ID_FIELD = "WELLID";
+    const SEQ_FIELD = "SEQ_NUM";
+    const LITH_FIELD = "PRIM_LITH";
+    const DEPTH_FIELD = "DEPTH";
+    const THICKNESS_FIELD = "THICKNESS";
+
+    // EGLE Well Lithology table endpoint.
+    // If table 4 is not the correct table in your service view, swap the /4/ part.
+    const lithologyQueryUrl =
+      "https://gisagoegle.state.mi.us/arcgis/rest/services/EGLE/DwOpenData/MapServer/4/query";
+
+    function getColor(lithology) {
+      const lith = String(lithology || "").toLowerCase();
+
+      if (lith.includes("sand")) return "#f4d03f";
+      if (lith.includes("silt")) return "#c2b280";
+      if (lith.includes("clay")) return "#a67c52";
+      if (lith.includes("gravel")) return "#9e9e9e";
+      if (lith.includes("till") || lith.includes("diamicton")) return "#b0c4de";
+      if (
+        lith.includes("rock") ||
+        lith.includes("bedrock") ||
+        lith.includes("limestone") ||
+        lith.includes("shale") ||
+        lith.includes("dolomite")
+      ) return "#95a5a6";
+
+      return "#d5d8dc";
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    async function loadProfile() {
+      if (!wellid) {
+        statusEl.textContent = "Select a well to view lithology.";
+        return;
+      }
+
+      statusEl.textContent = "Loading lithology for Well ID " + wellid + "...";
+
+      // WELLID appears numeric in most Wellogic contexts.
+      // If the service treats WELLID as text, use the alternate WHERE clause below.
+      const whereClause = `${WELL_ID_FIELD} = ${wellid}`;
+
+      // Alternate if WELLID is text:
+      // const safeWellId = wellid.replaceAll("'", "''");
+      // const whereClause = `${WELL_ID_FIELD} = '${safeWellId}'`;
+
+      const queryParams = new URLSearchParams({
+        f: "json",
+        where: whereClause,
+        outFields: "*",
+        returnGeometry: "false",
+        orderByFields: SEQ_FIELD
+      });
+
+      const url = `${lithologyQueryUrl}?${queryParams.toString()}`;
+
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.error) {
+          console.error(data.error);
+          statusEl.textContent = "Query error loading lithology.";
+          return;
+        }
+
+        if (!data.features || data.features.length === 0) {
+          statusEl.textContent = "No lithology records found for Well ID " + wellid + ".";
+          profileEl.innerHTML = "";
+          axisEl.innerHTML = "";
+          return;
+        }
+
+        const rows = data.features
+          .map(feature => feature.attributes)
+          .sort((a, b) => Number(a[SEQ_FIELD]) - Number(b[SEQ_FIELD]));
+
+        const intervals = rows.map(row => {
+          const bottomDepth = Number(row[DEPTH_FIELD]) || 0;
+          const thickness = Number(row[THICKNESS_FIELD]) || 0;
+          const topDepth = Math.max(bottomDepth - thickness, 0);
+
+          return {
+            seq: row[SEQ_FIELD],
+            lithology: row[LITH_FIELD] || "Unknown",
+            topDepth,
+            bottomDepth,
+            thickness: Math.max(thickness, 1)
+          };
+        });
+
+        const maxDepth = Math.max(...intervals.map(i => i.bottomDepth));
+
+        // Adjust this if logs are too tall or too compressed.
+        const scale = 4; // pixels per foot
+
+        statusEl.textContent = intervals.length + " lithology interval(s) found.";
+
+        axisEl.innerHTML = `
+          <div style="height:${maxDepth * scale}px; position:relative;">
+            <div style="position:absolute; top:0;">0 ft</div>
+            <div style="position:absolute; bottom:0;">${escapeHtml(maxDepth)} ft</div>
+          </div>
+        `;
+
+        profileEl.innerHTML = intervals.map(interval => {
+          const color = getColor(interval.lithology);
+
+          return `
+            <div class="interval"
+                 title="${escapeHtml(interval.topDepth)}-${escapeHtml(interval.bottomDepth)} ft: ${escapeHtml(interval.lithology)}"
+                 style="height:${interval.thickness * scale}px; background:${color};">
+              <strong>${escapeHtml(interval.topDepth)}-${escapeHtml(interval.bottomDepth)} ft</strong><br>
+              ${escapeHtml(interval.lithology)}
+            </div>
+          `;
+        }).join("");
+
+      } catch (error) {
+        console.error(error);
+        statusEl.textContent = "Could not load lithology profile.";
+      }
+    }
+
+    loadProfile();
+  </script>
+</body>
+</html>
