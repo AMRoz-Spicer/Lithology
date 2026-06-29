@@ -76,6 +76,18 @@
       border: 1px solid #444;
       display: inline-block;
     }
+
+        .label-column {
+      position: relative;
+      width: 180px;
+      font-size: 10px;
+    }
+    
+    .side-label {
+      position: absolute;
+      white-space: nowrap;
+    }
+
   </style>
 </head>
 
@@ -84,8 +96,12 @@
   <div id="status">Select a well to view lithology.</div>
 
   <div class="profile-wrap">
-    <div id="depthAxis" class="depth-axis"></div>
-    <div id="profile" class="log-column"></div>
+  <div id="depthAxis" class="depth-axis"></div>
+
+  <div style="display:flex; gap:8px;">
+      <div id="profile" class="log-column"></div>
+      <div id="labels" class="label-column"></div>
+    </div>
   </div>
 
   <div class="legend">
@@ -104,6 +120,7 @@
 
     const statusEl = document.getElementById("status");
     const profileEl = document.getElementById("profile");
+    const labelsEl = document.getElementById("labels");
     const axisEl = document.getElementById("depthAxis");
 
     // EGLE Well Lithology table fields
@@ -222,27 +239,43 @@
           </div>
         `;
 
-        profileEl.innerHTML = intervals.map(interval => {
-          const color = getColor(interval.lithology);
-          const heightPx = interval.thickness * scale;
-        
-          // Only show text if block is tall enough
-          const showLabel = heightPx > 30;
-        
-          return `
-            <div class="interval"
-                 title="${interval.topDepth}-${interval.bottomDepth} ft: ${interval.lithology}"
-                 style="height:${heightPx}px; background:${color};">
-        
-              ${showLabel ? `
-                <strong>${interval.topDepth}-${interval.bottomDepth} ft</strong><br>
-                ${interval.lithology}
-              ` : ""}
-        
-            </div>
-          `;
-        }).join("");
-        ``
+const labelsEl = document.getElementById("labels"); // ADD THIS near your other element defs
+labelsEl.innerHTML = "";
+
+profileEl.innerHTML = intervals.map(interval => {
+  const color = getColor(interval.lithology);
+  const heightPx = interval.thickness * scale;
+
+  const showInsideLabel = heightPx > 30;
+
+  // Calculate midpoint for side label
+  const midPoint = (interval.topDepth + interval.bottomDepth) / 2;
+  const topPosition = midPoint * scale;
+
+  // Create side label for thin layers
+  if (!showInsideLabel) {
+    labelsEl.innerHTML += `
+      <div class="side-label" style="top:${topPosition}px;">
+        ${interval.topDepth}-${interval.bottomDepth} ft<br>
+        ${interval.lithology}
+      </div>
+    `;
+  }
+
+  return `
+    <div class="interval"
+         title="${interval.topDepth}-${interval.bottomDepth} ft: ${interval.lithology}"
+         style="height:${heightPx}px; background:${color};">
+
+      ${showInsideLabel ? `
+        <strong>${interval.topDepth}-${interval.bottomDepth} ft</strong><br>
+        ${interval.lithology}
+      ` : ""}
+
+    </div>
+  `;
+}).join("");
+``
 
       } catch (error) {
         console.error(error);
