@@ -218,7 +218,6 @@
         const maxHeight = 300;
         const scale = maxHeight / maxDepth;
         
-        labelsEl.style.height = `${maxDepth * scale}px`;
         profileEl.style.height = `${maxDepth * scale}px`;
 
         statusEl.textContent = intervals.length + " lithology interval(s) found.";
@@ -258,7 +257,6 @@ profileEl.innerHTML = intervals.map(interval => {
     </div>
   `;
 }).join("");
-``
 
       } catch (error) {
         console.error(error);
