@@ -77,15 +77,18 @@
       display: inline-block;
     }
 
-        .label-column {
+    .label-column {
       position: relative;
       width: 180px;
       font-size: 10px;
+      height: 100%;
     }
     
-    .side-label {
+     .side-label {
       position: absolute;
+      transform: translateY(-50%);
       white-space: nowrap;
+      line-height: 1.1;
     }
 
   </style>
@@ -98,7 +101,7 @@
   <div class="profile-wrap">
   <div id="depthAxis" class="depth-axis"></div>
 
-  <div style="display:flex; gap:8px;">
+  <div style="display:flex; gap:8px; position:relative;">
       <div id="profile" class="log-column"></div>
       <div id="labels" class="label-column"></div>
     </div>
@@ -255,7 +258,7 @@ profileEl.innerHTML = intervals.map(interval => {
   // Create side label for thin layers
   if (!showInsideLabel) {
     labelsEl.innerHTML += `
-      <div class="side-label" style="top:${topPosition}px;">
+      <div class="side-label" style="top:${topPosition}px; left:5px;">
         ${interval.topDepth}-${interval.bottomDepth} ft<br>
         ${interval.lithology}
       </div>
