@@ -83,11 +83,13 @@
       font-size: 10px;
     }
     
-     .side-label {
+    .side-label {
       position: absolute;
       transform: translateY(-50%);
       white-space: nowrap;
       line-height: 1.1;
+      left: 5px;
+      pointer-events: none;
     }
 
   </style>
@@ -230,7 +232,8 @@
         const maxDepth = Math.max(...intervals.map(i => i.bottomDepth));
 
         // Adjust this if logs are too tall or too compressed.
-        const scale = 2;
+        const maxHeight = 300;
+        const scale = maxHeight / maxDepth;
         
         labelsEl.style.height = `${maxDepth * scale}px`;
         profileEl.style.height = `${maxDepth * scale}px`;
@@ -254,12 +257,17 @@ profileEl.innerHTML = intervals.map(interval => {
 
   // Calculate midpoint for side label
   const midPoint = (interval.topDepth + interval.bottomDepth) / 2;
-  const topPosition = midPoint * scale;
+  const topPosition = (maxDepth - midPoint) * scale;
+  
+  const safeTop = Math.min(
+    Math.max(topPosition, 0),
+    maxDepth * scale
+  );
 
   // Create side label for thin layers
   if (!showInsideLabel) {
     labelsEl.innerHTML += `
-      <div class="side-label" style="top:${topPosition}px; left:5px;">
+      <div class="side-label" style="top:${safeTop}px; left:5px;">
         ${interval.topDepth}-${interval.bottomDepth} ft<br>
         ${interval.lithology}
       </div>
