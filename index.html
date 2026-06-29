@@ -156,7 +156,8 @@
 
       // WELLID appears numeric in most Wellogic contexts.
       // If the service treats WELLID as text, use the alternate WHERE clause below.
-      const whereClause = `${WELL_ID_FIELD} = ${wellid}`;
+      const safeWellId = wellid.replaceAll("'", "''");
+      const whereClause = `${WELL_ID_FIELD} = '${safeWellId}'`;
 
       // Alternate if WELLID is text:
       // const safeWellId = wellid.replaceAll("'", "''");
