@@ -9,7 +9,7 @@
       font-family: Arial, sans-serif;
       margin: 12px;
       color: #222;
-      background: #fff;
+      background: #F0F0F0;
     }
 
     h3 {
@@ -41,7 +41,7 @@
     .log-column {
       width: 160px;
       border: 1px solid #333;
-      background: #f7f7f7;
+      background: #F0F0F0;
     }
 
     .interval {
@@ -224,16 +224,25 @@
 
         profileEl.innerHTML = intervals.map(interval => {
           const color = getColor(interval.lithology);
-
+          const heightPx = interval.thickness * scale;
+        
+          // Only show text if block is tall enough
+          const showLabel = heightPx > 30;
+        
           return `
             <div class="interval"
-                 title="${escapeHtml(interval.topDepth)}-${escapeHtml(interval.bottomDepth)} ft: ${escapeHtml(interval.lithology)}"
-                 style="height:${interval.thickness * scale}px; background:${color};">
-              <strong>${escapeHtml(interval.topDepth)}-${escapeHtml(interval.bottomDepth)} ft</strong><br>
-              ${escapeHtml(interval.lithology)}
+                 title="${interval.topDepth}-${interval.bottomDepth} ft: ${interval.lithology}"
+                 style="height:${heightPx}px; background:${color};">
+        
+              ${showLabel ? `
+                <strong>${interval.topDepth}-${interval.bottomDepth} ft</strong><br>
+                ${interval.lithology}
+              ` : ""}
+        
             </div>
           `;
         }).join("");
+        ``
 
       } catch (error) {
         console.error(error);
