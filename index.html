@@ -81,7 +81,7 @@
 </head>
 
 <body>
-  <h3>Well Lithology Profile</h3>
+  <h3 id="title">Well Lithology Profile</h3>
   <div id="status">Select a well to view lithology.</div>
 
   <div class="profile-wrap">
@@ -155,6 +155,9 @@
         statusEl.textContent = "Select a well to view lithology.";
         return;
       }
+
+      const titleEl = document.getElementById("title");
+      titleEl.textContent = "Well Lithology Profile – Well ID " + wellid;
 
       statusEl.textContent = "Loading lithology for Well ID " + wellid + "...";
 
