@@ -199,7 +199,7 @@
 
         const rows = data.features
           .map(feature => feature.attributes)
-          .sort((a, b) => Number(b[SEQ_FIELD]) - Number(a[SEQ_FIELD]));
+          .sort((a, b) => Number(a[SEQ_FIELD]) - Number(b[SEQ_FIELD]));
 
         const intervals = rows.map(row => {
           const bottomDepth = Number(row[DEPTH_FIELD]) || 0;
